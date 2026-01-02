@@ -20,18 +20,28 @@ function randomLocation() {
 }
 
 async function loadStreetView() {
-  actualLocation = randomLocation();
+  document.getElementById("streetView").innerHTML = "Yükleniyor...";
 
-  const url = `https://graph.mapillary.com/images?access_token=${MAPILLARY_TOKEN}&fields=id&closeto=${actualLocation[1]},${actualLocation[0]}&limit=1`;
+  let found = false;
 
-  const res = await fetch(url);
-  const data = await res.json();
+  while (!found) {
+    actualLocation = randomLocation();
 
-  const imageId = data.data[0].id;
+    const url = `https://graph.mapillary.com/images?access_token=${MAPILLARY_TOKEN}&fields=id,thumb_2048_url&closeto=${actualLocation[1]},${actualLocation[0]}&limit=1`;
 
-  document.getElementById("streetView").innerHTML = `
-    <img src="https://images.mapillary.com/${imageId}/thumb-2048.jpg" style="width:100%;height:100%;object-fit:cover">
-  `;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.data && data.data.length > 0) {
+      const img = data.data[0].thumb_2048_url;
+
+      document.getElementById("streetView").innerHTML = `
+        <img src="${img}" style="width:100%;height:100%;object-fit:cover">
+      `;
+
+      found = true;
+    }
+  }
 }
 
 map.on('click', e => {
