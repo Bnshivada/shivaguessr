@@ -1,66 +1,76 @@
+const MAPILLARY_TOKEN = "MLY|25934228976162079|d732932e47e3b2ca8b3469273882fa8f";
+
 let round = 1;
 let totalScore = 0;
 
 let actualLocation;
-let guessLocation;
-let map, marker, panorama;
+let guessMarker;
+
+const map = L.map('map').setView([20, 0], 2);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19
+}).addTo(map);
 
 function randomLocation() {
-  return {
-    lat: Math.random() * 180 - 90,
-    lng: Math.random() * 360 - 180
-  };
+  return [
+    Math.random() * 180 - 90,
+    Math.random() * 360 - 180
+  ];
 }
 
-function startRound() {
-  document.getElementById("round").innerText = round;
-
+async function loadStreetView() {
   actualLocation = randomLocation();
 
-  panorama = new google.maps.StreetViewPanorama(
-    document.getElementById("streetView"),
-    { position: actualLocation, pov: { heading: 0, pitch: 0 }, zoom: 1 }
-  );
+  const url = `https://graph.mapillary.com/images?access_token=${MAPILLARY_TOKEN}&fields=id&closeto=${actualLocation[1]},${actualLocation[0]}&limit=1`;
 
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: { lat: 20, lng: 0 },
-    zoom: 2,
-    disableDefaultUI: true
-  });
+  const res = await fetch(url);
+  const data = await res.json();
 
-  map.addListener("click", (e) => {
-    guessLocation = e.latLng;
-    if (marker) marker.setMap(null);
-    marker = new google.maps.Marker({ position: guessLocation, map });
-  });
+  const imageId = data.data[0].id;
+
+  document.getElementById("streetView").innerHTML = `
+    <img src="https://images.mapillary.com/${imageId}/thumb-2048.jpg" style="width:100%;height:100%;object-fit:cover">
+  `;
 }
 
-function calculateScore(distance) {
-  const maxDistance = 20000000;
-  let score = Math.max(0, Math.round(5000 * (1 - distance / maxDistance)));
-  return score;
+map.on('click', e => {
+  if (guessMarker) map.removeLayer(guessMarker);
+  guessMarker = L.marker(e.latlng).addTo(map);
+});
+
+function calculateDistance(a, b) {
+  const R = 6371;
+  const dLat = (b[0] - a[0]) * Math.PI / 180;
+  const dLon = (b[1] - a[1]) * Math.PI / 180;
+
+  const x = Math.sin(dLat/2) ** 2 +
+    Math.cos(a[0] * Math.PI / 180) *
+    Math.cos(b[0] * Math.PI / 180) *
+    Math.sin(dLon/2) ** 2;
+
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
 }
 
 document.getElementById("guessBtn").onclick = () => {
-  if (!guessLocation) return alert("Haritadan bir yer seç!");
+  if (!guessMarker) return alert("Haritadan bir yer seç!");
 
-  const distance = google.maps.geometry.spherical.computeDistanceBetween(
-    new google.maps.LatLng(actualLocation),
-    guessLocation
-  );
+  const guess = guessMarker.getLatLng();
+  const distance = calculateDistance(actualLocation, [guess.lat, guess.lng]);
 
-  const score = calculateScore(distance);
+  const score = Math.max(0, Math.round(5000 * (1 - distance / 20000)));
   totalScore += score;
 
   document.getElementById("score").innerText = totalScore;
 
   round++;
+  document.getElementById("round").innerText = round;
 
   if (round <= 5) {
-    setTimeout(startRound, 1000);
+    loadStreetView();
   } else {
-    alert("Oyun bitti! Skorun: " + totalScore);
+    alert("Oyun bitti! Skor: " + totalScore);
   }
 };
 
-window.onload = startRound;
+loadStreetView();
