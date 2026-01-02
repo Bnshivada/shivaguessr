@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>ShivaGuessr</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://maps.googleapis.com/maps/api/js?key=API_KEY&libraries=geometry"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <header>
+    <div class="logo">Shiva<span>Guessr</span></div>
+    <div class="stats">
+      <div>Round: <b id="round">1</b>/5</div>
+      <div>Skor: <b id="score">0</b></div>
+    </div>
+  </header>
+
+  <main>
+    <section id="streetView"></section>
+    <section id="mapArea">
+      <div id="map"></div>
+      <button id="guessBtn">TAHMİN YAP</button>
+    </section>
+  </main>
+
+  <footer>
+    <span>ShivaGuessr © 2026</span>
+  </footer>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
